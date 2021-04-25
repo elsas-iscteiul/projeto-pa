@@ -66,14 +66,13 @@ fun parseType(fieldValue: Any?): String {
     }
 }
 
-class VisitorSearchString : Visitor {
+class VisitorReturnKeys : Visitor {
 
     var found = mutableListOf<String>()
 
     override fun visit(jo: JsonObject) {
         jo.children.forEach {
-            if(it.fieldValue is String)
-                found.add(it.fieldValue as String)
+            found.add(it.field)
         }
 
     }
@@ -97,7 +96,7 @@ fun main(){
     val test6 = JsonElement("Pessoas", jObject)
     jsonObject1.addElement(test6)
 
-    val stringFind = VisitorSearchString()
+    val stringFind = VisitorReturnKeys()
     val textSerializer = VisitorTextSerialize()
 
     jsonObject1.accept(textSerializer)
