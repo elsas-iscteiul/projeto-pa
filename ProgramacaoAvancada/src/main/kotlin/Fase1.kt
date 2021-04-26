@@ -26,6 +26,12 @@ class JsonObject  {
         }
         v.visit(this)
     }
+
+    fun serialize(): String {
+        val serializer = VisitorTextSerialize()
+        this.accept(serializer)
+        return serializer.serializedText
+    }
 }
 
 interface Visitor{
@@ -36,7 +42,7 @@ class VisitorTextSerialize: Visitor{
     var serializedText = ""
 
     override fun visit(jo: JsonObject) {
-        val everyValue = jo.children.joinToString { "\"" + it.field + "\"" + ":" + parseType(it.fieldValue) }
+        val everyValue = jo.children.joinToString { "\"" + it.field + "\"" + " : " + parseType(it.fieldValue) }
         serializedText = "{$everyValue}"
     }
 
