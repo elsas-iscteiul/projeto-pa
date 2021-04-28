@@ -7,18 +7,16 @@ class Fase1Test{
         val jObj = JsonObject()
         jObj.addElement(JsonElement("numeros", listOf(1,2,3)))
         jObj.addElement(JsonElement("letra", "a"))
-        val getKeys = VisitorReturnKeys()
-        jObj.accept(getKeys)
-        assertEquals("letra", getKeys.found[1])
+        val keys = jObj.getKeys()
+        assertEquals("letra", keys[1])
     }
 
     @Test
     fun serializeTest() {
         val jObj = JsonObject()
         jObj.addElement(JsonElement("nomes", listOf("Pedro", "Santiago", "Francisca")))
-        val serializer = VisitorTextSerialize()
-        jObj.accept(serializer)
-        assertEquals("{\"nomes\" : [\"Pedro\", \"Santiago\", \"Francisca\"]}", serializer.serializedText)
+        val serialized = jObj.serialize()
+        assertEquals("{\"nomes\" : [\"Pedro\", \"Santiago\", \"Francisca\"]}", serialized)
     }
 }
 

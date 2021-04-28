@@ -1,28 +1,77 @@
-class JsonElement(val field: String) {
-    var fieldValue: Any? = null
-    constructor(field: String, dataType: String) : this(field) {fieldValue = dataType}
-    constructor(field: String, dataType: Int?) : this(field) { fieldValue = dataType} //Podia criar outro construtor para o tipo null, mas estou a receber ca os nulls
-    constructor(field: String, dataType: Boolean) : this(field){fieldValue = dataType}
-    constructor(field: String, dataType: Collection<*>) : this(field){fieldValue = dataType}
-    constructor(field: String, dataType: JsonObject) : this(field){fieldValue = dataType}
+abstract class Element(){
+     open var fieldValue: Any? = null
+}
+
+class JsonElement(val field: String) : Element() {
+    override var fieldValue: Any? = null
+    constructor(field: String, dataType: Any?) : this(field) {
+        when(dataType){
+            is Int? -> fieldValue = dataType
+            is String -> fieldValue = dataType
+            is Boolean -> fieldValue = dataType
+            is Double -> fieldValue = dataType
+            is JsonObject -> fieldValue = dataType
+            is JsonArray -> fieldValue = dataType
+        }
+        if(dataType is Collection<*>){
+            val jArr = JsonArray()
+            dataType.forEach {
+                if (it != null) {
+                    jArr.addElement(it)
+                }
+            }
+            fieldValue = jArr
+        }
+    }
 
 
 }
 
-//JsonObject = {} pode ter elementos la dentro, neste caso JsonDataType
-class JsonObject  {
-    val children : MutableList<JsonElement> = mutableListOf()
+class JsonArray() : Element(){
 
-    fun addElement(je : JsonElement){
-        children.add(je)
+    constructor(col : Collection<*>) : this(){
+        col.forEach {
+            if (it != null) {
+                children.add(it)
+            }
+        }
     }
 
-    var fieldValue: Any? = children
+    val children = mutableListOf<Any>()
+
+    fun addElement(a : Any){
+        children.add(a)
+    }
+
+    fun accept(v: Visitor) {
+        v.visit(this)
+    }
+
+    fun serialize() : String{
+        val serializer = VisitorTextSerialize()
+        this.accept(serializer)
+        return serializer.serializedText
+    }
+}
+
+//VER JSON ARRAY
+
+//JsonObject = {} pode ter elementos la dentro, neste caso JsonDataType
+class JsonObject  {
+    val children : MutableList<Element> = mutableListOf()
+
+    fun addElement(e : Element){
+        children.add(e)
+    }
 
     fun accept(v: Visitor) {
         children.forEach {
-            if(it.fieldValue is JsonObject)
-                (it.fieldValue as JsonObject).accept(v)
+            if( it is JsonElement){
+                if(it.fieldValue is JsonObject)
+                    (it.fieldValue as JsonObject).accept(v)
+                if(it.fieldValue is JsonArray)
+                    ((it.fieldValue as JsonArray).accept(v))
+            }
         }
         v.visit(this)
     }
@@ -32,18 +81,42 @@ class JsonObject  {
         this.accept(serializer)
         return serializer.serializedText
     }
+
+    fun getKeys(): MutableList<String> {
+        val keysGetter = VisitorReturnKeys()
+        this.accept(keysGetter)
+        return keysGetter.found
+    }
 }
 
 interface Visitor{
     fun visit(jo: JsonObject)
+    fun visit(ja: JsonArray)
 }
 
 class VisitorTextSerialize: Visitor{
     var serializedText = ""
 
     override fun visit(jo: JsonObject) {
-        val everyValue = jo.children.joinToString { "\"" + it.field + "\"" + " : " + parseType(it.fieldValue) }
+
+        val everyValue = jo.children.joinToString {
+            (if (it is JsonElement ){
+                "\"" + it.field + "\"" + " : " + parseType(it.fieldValue)
+            }
+            else {
+                "[" + parseType(it.fieldValue) + "]"
+            }).toString()
+
+        }
         serializedText = "{$everyValue}"
+    }
+
+
+    override fun visit(ja: JsonArray) {
+        val everyValue = ja.children.joinToString {
+            parseType(it)
+        }
+        serializedText = "[$everyValue]"
     }
 
 }
@@ -52,17 +125,19 @@ fun parseType(fieldValue: Any?): String {
     if (fieldValue is JsonObject){
         var parsedString = "{"
         parsedString += fieldValue.children.joinToString(separator = ", ") {
-            "\"" + it.field + "\"" + ":" + parseType(it.fieldValue)
+            (if (it is JsonElement ){
+                "\"" + it.field + "\"" + " : " + parseType(it.fieldValue)
+            }
+            else {
+                "[" + parseType(it.fieldValue) + "]"
+            }).toString()
         }
         return parsedString + "}"
     }
-    if (fieldValue is Collection<*>){ //Pode ser ArrayList pq e um datatype do tipo array ou porque e children de JsonObject
+    if (fieldValue is JsonArray){
         var parsedString = "["
-        parsedString += fieldValue.joinToString(separator = ", ") {
-            if (it is String)
-                "\"$it\""
-            else
-                "$it"
+        parsedString += fieldValue.children.joinToString(separator = ", ") {
+                "${parseType(it)}"
         }
         return parsedString + "]"
     }
@@ -78,9 +153,14 @@ class VisitorReturnKeys : Visitor {
 
     override fun visit(jo: JsonObject) {
         jo.children.forEach {
-            found.add(it.field)
+            if(it is JsonElement)
+                found.add(it.field)
         }
 
+    }
+
+    override fun visit(ja: JsonArray) {
+        return
     }
 }
 
@@ -90,6 +170,7 @@ fun main(){
     val test3 = JsonElement("nome", "Francisca")
     val test4 = JsonElement("listapessoas", arrayListOf<String>("A","B","C"))
     val test5 = JsonElement("Testenull", null)
+
 
     val jsonObject1 = JsonObject()
     jsonObject1.addElement(test1)
@@ -102,16 +183,22 @@ fun main(){
     val test6 = JsonElement("Pessoas", jObject)
     jsonObject1.addElement(test6)
 
-    val stringFind = VisitorReturnKeys()
-    val textSerializer = VisitorTextSerialize()
-
-    jsonObject1.accept(textSerializer)
-    jsonObject1.accept(stringFind)
-    println(textSerializer.serializedText)
-
-    stringFind.found.forEach { println(it) }
+    val jobjectList = mutableListOf<JsonObject>()
+    jobjectList.add(jsonObject1)
+    jobjectList.add(jObject)
 
 
+    val jObj3 = JsonObject()
+    jObj3.addElement(JsonElement("TesteArrayJOBJECTS", jobjectList))
+
+
+
+
+    println(jObj3.serialize())
+
+
+    val jArrayTest = JsonArray(arrayListOf("joao",2,3,4))
+    println(jArrayTest.serialize())
 
 
 }
