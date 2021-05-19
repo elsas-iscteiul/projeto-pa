@@ -1,5 +1,4 @@
-import java.lang.Exception
-import java.lang.IllegalArgumentException
+
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
@@ -80,13 +79,11 @@ fun validateDataClass(c: KClass<Any>){
 fun main(){
     val a = Aluno("Pedro", 99233, "MEI")
     val jObject = generateJson(a)
+    println(jObject.serialize())
     //val mapTest = mapOf("Joao" to listOf<Int>(1,2,3), "Manuela" to listOf(4,5,6))
     //val jObject = generateJson(mapTest)
     val intTester = generateJson("idade" , null)
     val arrTester = generateJson(listOf(intTester, 2, 5, jObject))
-    println(arrTester.serialize())
-    val textSerializer = VisitorTextSerialize()
-    intTester.accept(textSerializer)
-    println(textSerializer.serializedText)
+
 
 }
