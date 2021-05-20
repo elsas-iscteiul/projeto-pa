@@ -1,4 +1,5 @@
 
+import org.eclipse.swt.graphics.Image
 import java.io.File
 import java.util.*
 import kotlin.reflect.KClass
@@ -27,6 +28,7 @@ class Injector {
                 }
             }
             scanner.close()
+
         }
 
         fun <T : Any> create(type: KClass<T>): T {
@@ -62,6 +64,10 @@ interface Action{
     fun execute(window: JsonTree)
 }
 
+interface Modifier{
+    fun apply(window: JsonTree)
+}
+
 class ToText : Action {
     override val name: String
         get() = "Escrever em Ficheiro"
@@ -74,3 +80,24 @@ class ToText : Action {
     }
 }
 
+class Icons : Modifier{
+    override fun apply(window: JsonTree) {
+        val eImage = Image(window.display, "json-element-icon.png")
+        val oImage = Image(window.display, "json-object-icon.jpg")
+        val aImage = Image(window.display, "json-array-icon.jpg")
+        window.allItems.forEach {
+            println(it.text)
+            if (it.text == "object") {
+                it.image = oImage
+            }
+            if (it.text == "arr"){
+                it.image = aImage
+            }
+            if(it.text != "object" && it.text != "arr"){
+                it.image = eImage
+            }
+
+        }
+    }
+
+}

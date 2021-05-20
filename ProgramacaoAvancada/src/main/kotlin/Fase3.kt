@@ -21,13 +21,17 @@ fun main() {
 }
 
 
-class JsonTree {
+class JsonTree() {
 
     val shell: Shell
     val tree: Tree
     val text: Text
     val search: Text
     lateinit var e: Element
+    val display: Display = Display.getDefault()
+
+    @Inject
+    lateinit var modifier : Modifier
 
     @InjectAdd
     val actions = mutableListOf<Action>()
@@ -133,12 +137,17 @@ class JsonTree {
             })
         }
 
+
+
         allItems.add(tree.topItem)
         getAllItems(tree.topItem, allItems)
+
+        modifier.apply(this)
+
         tree.expandAll()
         shell.pack()
         shell.open()
-        val display = Display.getDefault()
+        
         while (!shell.isDisposed) {
             if (!display.readAndDispatch()) display.sleep()
         }
