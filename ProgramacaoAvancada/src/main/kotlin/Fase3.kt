@@ -5,6 +5,7 @@ import org.eclipse.swt.events.ModifyListener
 import org.eclipse.swt.events.SelectionAdapter
 import org.eclipse.swt.events.SelectionEvent
 import org.eclipse.swt.graphics.Color
+import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.FillLayout
 import org.eclipse.swt.widgets.*
 
@@ -15,6 +16,12 @@ fun main() {
     val jObj = generateJson(aluno)
     val arrEx = listOf(1,2,3,jObj)
     val arrJson = generateJson(arrEx)
+    arrJson.addElement("Subaru")
+    val example = JsonData("name", "Magali")
+    val anotherObj = JsonObject()
+    anotherObj.addElement(example)
+    arrJson.addElement(anotherObj)
+
 
     val jt = Injector.create(JsonTree::class)
     jt.open(arrJson)
@@ -27,7 +34,7 @@ class JsonTree() {
     val tree: Tree
     val text: Text
     val search: Text
-    lateinit var e: Element
+    lateinit var e: JsonElement
     val display: Display = Display.getDefault()
 
     @Inject
@@ -78,7 +85,7 @@ class JsonTree() {
 
 
 
-    fun open(e: Element) {
+    fun open(e: JsonElement) {
         this.e = e
         e.accept(object : Visitor{
             var currentTreeItem: TreeItem? = null
@@ -91,9 +98,10 @@ class JsonTree() {
                     root = TreeItem(currentTreeItem, SWT.NONE)
                 }
 
-                root.text = "object"
                 currentTreeItem = root
                 root.setData("name", jo.serialize())
+                root.text = "object"
+                root.setImage(Image(display, modifier.getImgLoc(jo)))
 
             }
 
@@ -107,21 +115,28 @@ class JsonTree() {
                 root.text = "arr"
                 currentTreeItem = root
                 root.setData("name", ja.serialize())
+                root.setImage(Image(display, modifier.getImgLoc(ja)))
 
                 ja.children.forEach {
-                    if(!(it is JsonObject)){
+                    if(!(it is JsonObject) && modifier.toShow(it)){
                         val node = TreeItem(currentTreeItem, SWT.NONE)
-                        node.text = it.toString()
+                        node.text = parseType(it)
                         node.setData("name", it.toString())
                     }
                 }
             }
 
-            override fun visit(je: JsonElement) {
+            override fun visit(jd: JsonData) {
                 val node = TreeItem(currentTreeItem, SWT.NONE)
-                node.text = je.field
-                node.setData("name", je.serialize())
+                //node.text = jd.name
+                node.text = modifier.setText(jd)
+                node.setData("name", jd.serialize())
+                node.setImage(Image(display, modifier.getImgLoc(jd)))
 
+            }
+
+            override fun endVisit() {
+                currentTreeItem = currentTreeItem?.parentItem
             }
 
         })
@@ -132,7 +147,7 @@ class JsonTree() {
             button.text = action.name
             button.addSelectionListener(object : SelectionAdapter(){
                 override fun widgetSelected(e: SelectionEvent) {
-                    action.execute(this@JsonTree)
+                    action.execute(text.text)
                 }
             })
         }
@@ -142,7 +157,7 @@ class JsonTree() {
         allItems.add(tree.topItem)
         getAllItems(tree.topItem, allItems)
 
-        modifier.apply(this)
+
 
         tree.expandAll()
         shell.pack()

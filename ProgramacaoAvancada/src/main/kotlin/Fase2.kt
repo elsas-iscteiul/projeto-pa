@@ -23,14 +23,14 @@ data class Aluno(
 fun generateJson(m : Map<*,*>): JsonObject{
     val jObject = JsonObject()
     m.forEach{
-        jObject.addElement(JsonElement(it.key.toString(), it.value))
+        jObject.addElement(JsonData(it.key.toString(), it.value))
     }
     return jObject
 }
 
 fun generateJson(key: String, value: Any?): JsonObject{
     val jObj = JsonObject()
-    jObj.addElement(JsonElement(key, value))
+    jObj.addElement(JsonData(key, value))
     return jObj
 }
 
@@ -58,15 +58,15 @@ fun generateJson(a: Any) : JsonObject{
         if(!it.hasAnnotation<Ignore>()) {
            if(it.hasAnnotation<DifferentName>()){
                val name = it.findAnnotation<DifferentName>()!!.name
-               jObject.addElement(JsonElement(name, it.get(a)))
+               jObject.addElement(JsonData(name, it.get(a)))
            }
             else{
-               jObject.addElement(JsonElement(it.name, it.get(a)))
+               jObject.addElement(JsonData(it.name, it.get(a)))
             }
         }
     }
     val finalValue = JsonObject()
-    finalValue.addElement(JsonElement(key, jObject))
+    finalValue.addElement(JsonData(key, jObject))
     return finalValue
 }
 

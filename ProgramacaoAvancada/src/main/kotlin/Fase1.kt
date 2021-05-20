@@ -1,23 +1,32 @@
-abstract class Element(){
+abstract class JsonElement(){
     abstract fun accept(visitor: Visitor)
     abstract fun serialize() : String
 
-    open var fieldValue: Any? = null
+    open var value: Any? = null
 }
 
-class JsonElement(var field: String) : Element() {
 
 
-    override var fieldValue: Any? = null
-    constructor(field: String, dataType: Any?) : this(field) {
-        when(dataType){
-            is Int? -> fieldValue = dataType
-            is String -> fieldValue = dataType
-            is Boolean -> fieldValue = dataType
-            is Double -> fieldValue = dataType
-            is JsonObject -> fieldValue = dataType
-            is JsonArray -> fieldValue = dataType
-        }
+fun isValidType(dataType: Any?): Boolean {
+    var valid  = false
+    when(dataType){
+        is Int? -> valid = true
+        is String -> valid = true
+        is Boolean -> valid = true
+        is Double -> valid = true
+        is JsonObject -> valid = true
+        is JsonArray -> valid = true
+    }
+    return valid
+}
+
+class JsonData(var name: String) : JsonElement() {
+
+
+    override var value: Any? = null
+    constructor(name: String, dataType: Any?) : this(name) {
+        if(isValidType(dataType))
+            value = dataType
         if(dataType is Collection<*>){
             val jArr = JsonArray()
             dataType.forEach {
@@ -25,26 +34,26 @@ class JsonElement(var field: String) : Element() {
                     jArr.addElement(it)
                 }
             }
-            fieldValue = jArr
+            value = jArr
         }
     }
 
     override fun accept(v: Visitor) {
         v.visit(this)
-        if(fieldValue is JsonObject)
-            (fieldValue as JsonObject).accept(v)
-        if(fieldValue is JsonArray)
-            (fieldValue as JsonArray).accept(v)
+        if(value is JsonObject)
+            (value as JsonObject).accept(v)
+        if(value is JsonArray)
+            (value as JsonArray).accept(v)
 
     }
 
     override fun serialize() : String {
-       return "${this.field} : ${parseType(this.fieldValue)}"
+       return " \"${this.name}\" : ${parseType(this.value)}"
     }
 
 }
 
-class JsonArray() : Element(){
+class JsonArray() : JsonElement(){
 
     constructor(col : Collection<*>) : this(){
         col.forEach {
@@ -57,6 +66,7 @@ class JsonArray() : Element(){
     val children = mutableListOf<Any>()
 
     fun addElement(a : Any){
+        if(isValidType(a))
         children.add(a)
     }
 
@@ -80,12 +90,12 @@ class JsonArray() : Element(){
 
 //VER JSON ARRAY
 
-//JsonObject = {} pode ter elementos la dentro, neste caso JsonDataType
-class JsonObject  : Element() {
-    val children : MutableList<Element> = mutableListOf()
 
-    fun addElement(e : Element){
-        children.add(e)
+class JsonObject  : JsonElement() {
+    val children : MutableList<JsonData> = mutableListOf()
+
+    fun addElement(jd : JsonData){
+        children.add(jd)
     }
 
     override fun accept(v: Visitor) {
@@ -93,17 +103,18 @@ class JsonObject  : Element() {
         children.forEach {
             it.accept(v)
         }
+        v.endVisit()
 
 
     }
 
     override fun serialize(): String {
         val everyValue = this.children.joinToString {
-            (if (it is JsonElement ){
-                "\"" + it.field + "\"" + " : " + parseType(it.fieldValue)
+            (if (it is JsonData ){
+                "\"" + it.name + "\"" + " : " + parseType(it.value)
             }
             else {
-                "[" + parseType(it.fieldValue) + "]"
+                "[" + parseType(it.value) + "]"
             }).toString()
 
         }
@@ -120,34 +131,35 @@ class JsonObject  : Element() {
 interface Visitor{
     fun visit(jo: JsonObject)
     fun visit(ja: JsonArray)
-    fun visit(je: JsonElement)
+    fun visit(je: JsonData)
+    fun endVisit()
 }
 
 
 
-fun parseType(fieldValue: Any?): String {
-    if (fieldValue is JsonObject){
+fun parseType(value: Any?): String {
+    if (value is JsonObject){
         var parsedString = "{"
-        parsedString += fieldValue.children.joinToString(separator = ", ") {
-            (if (it is JsonElement ){
-                "\"" + it.field + "\"" + " : " + parseType(it.fieldValue)
+        parsedString += value.children.joinToString(separator = ", ") {
+            (if (it is JsonData ){
+                "\"" + it.name + "\"" + " : " + parseType(it.value)
             }
             else {
-                "[" + parseType(it.fieldValue) + "]"
+                "[" + parseType(it.value) + "]"
             }).toString()
         }
         return parsedString + "}"
     }
-    if (fieldValue is JsonArray){
+    if (value is JsonArray){
         var parsedString = "["
-        parsedString += fieldValue.children.joinToString(separator = ", ") {
+        parsedString += value.children.joinToString(separator = ", ") {
                 "${parseType(it)}"
         }
         return parsedString + "]"
     }
-    return when(fieldValue){
-        is String -> "\"$fieldValue\""
-        else -> "$fieldValue"
+    return when(value){
+        is String -> "\"$value\""
+        else -> "$value"
     }
 }
 
@@ -157,8 +169,8 @@ class VisitorReturnKeys : Visitor {
 
     override fun visit(jo: JsonObject) {
         jo.children.forEach {
-            if(it is JsonElement)
-                found.add(it.field)
+            if(it is JsonData)
+                found.add(it.name)
         }
 
     }
@@ -167,16 +179,18 @@ class VisitorReturnKeys : Visitor {
         return
     }
 
-    override fun visit(je: JsonElement){}
+    override fun visit(je: JsonData){}
+    override fun endVisit() {
+    }
 }
 
 fun main(){
-    val test1 = JsonElement("nome","Paulo")
-    val test2 = JsonElement("idade", 15)
-    val test3 = JsonElement("nome", "Francisca")
+    val test1 = JsonData("nome","Paulo")
+    val test2 = JsonData("idade", 15)
+    val test3 = JsonData("nome", "Francisca")
 
-    val a = JsonElement("1", 1)
-    val b = JsonElement("2", 2)
+    val a = JsonData("1", 1)
+    val b = JsonData("2", 2)
 
 
 
@@ -189,7 +203,7 @@ fun main(){
     jObject.addElement(test3)
 
 
-    val test6 = JsonElement("Pessoas", jObject)
+    val test6 = JsonData("Pessoas", jObject)
     jsonObject1.addElement(test6)
 
     println(jsonObject1.serialize())

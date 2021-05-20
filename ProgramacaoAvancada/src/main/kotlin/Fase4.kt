@@ -1,5 +1,3 @@
-
-import org.eclipse.swt.graphics.Image
 import java.io.File
 import java.util.*
 import kotlin.reflect.KClass
@@ -61,43 +59,49 @@ class Injector {
 
 interface Action{
     val name: String
-    fun execute(window: JsonTree)
+    fun execute(window: String)
 }
 
 interface Modifier{
-    fun apply(window: JsonTree)
+    fun getImgLoc(e: JsonElement) : String
+    fun toShow(a: Any?) : Boolean
+    fun setText(jsonData: JsonData) : String
 }
 
 class ToText : Action {
     override val name: String
         get() = "Escrever em Ficheiro"
 
-    override fun execute(window: JsonTree) {
+    override fun execute(text: String) {
         val file = File("SerializedText.txt")
+        file.appendText(text)
         file.appendText("\n")
-        file.appendText(window.text.text)
 
     }
 }
 
-class Icons : Modifier{
-    override fun apply(window: JsonTree) {
-        val eImage = Image(window.display, "json-element-icon.png")
-        val oImage = Image(window.display, "json-object-icon.jpg")
-        val aImage = Image(window.display, "json-array-icon.jpg")
-        window.allItems.forEach {
-            println(it.text)
-            if (it.text == "object") {
-                it.image = oImage
-            }
-            if (it.text == "arr"){
-                it.image = aImage
-            }
-            if(it.text != "object" && it.text != "arr"){
-                it.image = eImage
-            }
 
+class Visualizer : Modifier{
+    override fun getImgLoc(e: JsonElement) : String{
+        when(e){
+            is JsonObject -> return "json-object-icon.jpg"
+            is JsonData -> return "json-element-icon.png"
+            is JsonArray -> return "json-array-icon.jpg"
         }
+        return ""
+    }
+
+    override fun setText(jsonData: JsonData) : String{
+        val modifiedText = "\"name\" :  \"${jsonData.name}\""
+        return modifiedText
+    }
+
+    override fun toShow(a: Any?) : Boolean{
+        var show = false
+        if(a is JsonObject)
+            show = true
+
+        return show
     }
 
 }

@@ -5,8 +5,8 @@ class Fase1Test{
     @Test
     fun testGetKeys(){
         val jObj = JsonObject()
-        jObj.addElement(JsonElement("numeros", listOf(1,2,3)))
-        jObj.addElement(JsonElement("letra", "a"))
+        jObj.addElement(JsonData("numeros", listOf(1,2,3)))
+        jObj.addElement(JsonData("letra", "a"))
         val keys = jObj.getKeys()
         assertEquals("letra", keys[1])
     }
@@ -14,7 +14,7 @@ class Fase1Test{
     @Test
     fun serializeTest() {
         val jObj = JsonObject()
-        jObj.addElement(JsonElement("nomes", listOf("Pedro", "Santiago", "Francisca")))
+        jObj.addElement(JsonData("nomes", listOf("Pedro", "Santiago", "Francisca")))
         val serialized = jObj.serialize()
         assertEquals("{\"nomes\" : [\"Pedro\", \"Santiago\", \"Francisca\"]}", serialized)
     }
