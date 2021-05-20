@@ -5,7 +5,7 @@ abstract class Element(){
     open var fieldValue: Any? = null
 }
 
-class JsonElement(val field: String) : Element() {
+class JsonElement(var field: String) : Element() {
 
 
     override var fieldValue: Any? = null

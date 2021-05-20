@@ -8,25 +8,34 @@ import org.eclipse.swt.graphics.Color
 import org.eclipse.swt.layout.FillLayout
 import org.eclipse.swt.widgets.*
 
+
+
 fun main() {
     val aluno = Aluno("Maria", 69123, "METI")
     val jObj = generateJson(aluno)
     val arrEx = listOf(1,2,3,jObj)
     val arrJson = generateJson(arrEx)
-    JsonTree().open(arrJson)
+
+    val jt = Injector.create(JsonTree::class)
+    jt.open(arrJson)
 }
 
-data class Dummy(val number: Int)
 
-class JsonTree() {
+class JsonTree {
+
     val shell: Shell
     val tree: Tree
     val text: Text
     val search: Text
+    lateinit var e: Element
+
+    @InjectAdd
+    val actions = mutableListOf<Action>()
 
     val allItems: MutableList<TreeItem> = mutableListOf()
 
     init {
+
         shell = Shell(Display.getDefault())
         shell.setSize(800, 500)
         shell.text = "JsonTree"
@@ -61,12 +70,12 @@ class JsonTree() {
             }
         })
 
-
     }
 
 
 
     fun open(e: Element) {
+        this.e = e
         e.accept(object : Visitor{
             var currentTreeItem: TreeItem? = null
             override fun visit(jo: JsonObject) {
@@ -112,6 +121,17 @@ class JsonTree() {
             }
 
         })
+
+
+        actions.forEach { action ->
+            val button = Button(shell, SWT.PUSH)
+            button.text = action.name
+            button.addSelectionListener(object : SelectionAdapter(){
+                override fun widgetSelected(e: SelectionEvent) {
+                    action.execute(this@JsonTree)
+                }
+            })
+        }
 
         allItems.add(tree.topItem)
         getAllItems(tree.topItem, allItems)
