@@ -65,7 +65,7 @@ class JsonTree() {
     }
 
     fun getSelectedElement(): JsonElement {
-        return tree.selection.first().getData("element") as JsonData
+        return tree.selection.first().getData("element") as JsonElement
     }
 
     init {
