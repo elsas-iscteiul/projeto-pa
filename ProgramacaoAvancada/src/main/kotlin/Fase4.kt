@@ -1,3 +1,12 @@
+
+import org.eclipse.swt.SWT
+import org.eclipse.swt.events.SelectionAdapter
+import org.eclipse.swt.events.SelectionEvent
+import org.eclipse.swt.layout.FillLayout
+import org.eclipse.swt.widgets.Button
+import org.eclipse.swt.widgets.Display
+import org.eclipse.swt.widgets.Shell
+import org.eclipse.swt.widgets.Text
 import java.io.File
 import java.util.*
 import kotlin.reflect.KClass
@@ -59,7 +68,7 @@ class Injector {
 
 interface Action{
     val name: String
-    fun execute(window: String)
+    fun execute(window: JsonTree)
 }
 
 interface Modifier{
@@ -72,13 +81,49 @@ class ToText : Action {
     override val name: String
         get() = "Escrever em Ficheiro"
 
-    override fun execute(text: String) {
+    override fun execute(window: JsonTree) {
         val file = File("SerializedText.txt")
-        file.appendText(text)
+        file.appendText(window.getSerializedText())
         file.appendText("\n")
 
     }
 }
+
+class Edit: Action{
+    override val name: String
+        get()  = "Editar nome"
+
+
+    override fun execute(window: JsonTree) {
+        val shell = Shell(Display.getDefault())
+        shell.setSize(300, 200)
+        shell.text = "Name Edit"
+        shell.layout = FillLayout()
+        val editField = Text(shell, SWT.NONE)
+        val button = Button(shell, SWT.PUSH)
+        button.text = "EDIT"
+        button.addSelectionListener(object : SelectionAdapter(){
+            override fun widgetSelected(e: SelectionEvent) {
+                val element = window.getSelectedElement()
+                if (element is JsonData)
+                    element.name = editField.text
+                window.refresh()
+                shell.dispose()
+
+            }
+        })
+
+        shell.pack()
+        shell.open()
+        val display = Display.getDefault()
+        while (!shell.isDisposed) {
+            if (!display.readAndDispatch()) display.sleep()
+        }
+        shell.dispose()
+    }
+
+}
+
 
 
 class Visualizer : Modifier{

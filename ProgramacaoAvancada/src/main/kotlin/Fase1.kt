@@ -76,6 +76,7 @@ class JsonArray() : JsonElement(){
             if(it is JsonObject)
                 it.accept(v)
         }
+        v.endVisit()
     }
 
     override fun serialize(): String {

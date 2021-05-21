@@ -6,7 +6,8 @@ import org.eclipse.swt.events.SelectionAdapter
 import org.eclipse.swt.events.SelectionEvent
 import org.eclipse.swt.graphics.Color
 import org.eclipse.swt.graphics.Image
-import org.eclipse.swt.layout.FillLayout
+import org.eclipse.swt.layout.GridData
+import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.widgets.*
 
 
@@ -17,7 +18,7 @@ fun main() {
     val arrEx = listOf(1,2,3,jObj)
     val arrJson = generateJson(arrEx)
     arrJson.addElement("Subaru")
-    val example = JsonData("name", "Magali")
+    val example = JsonData("modified", true)
     val anotherObj = JsonObject()
     anotherObj.addElement(example)
     arrJson.addElement(anotherObj)
@@ -45,21 +46,47 @@ class JsonTree() {
 
     val allItems: MutableList<TreeItem> = mutableListOf()
 
+
+    fun getSerializedText(): String{
+        return text.text
+    }
+
+    fun refresh(){
+        allItems.forEach {
+            val type = it.getData("element")
+            if(type is JsonData) {
+                it.text = modifier.setText(type)
+            }
+
+            it.setData("name", (type as JsonElement).serialize())
+            text.setText(tree.selection.first().getData("name").toString())
+
+        }
+    }
+
+    fun getSelectedElement(): JsonElement {
+        return tree.selection.first().getData("element") as JsonData
+    }
+
     init {
 
         shell = Shell(Display.getDefault())
-        shell.setSize(800, 500)
         shell.text = "JsonTree"
-        shell.layout = FillLayout()
+        shell.layout = GridLayout(2, false)
+
 
         tree = Tree(shell, SWT.NONE)
 
 
-        text = Text(shell, SWT.NONE)
+        text = Text(shell, SWT.SINGLE)
+        text.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
         text.editable = false
 
+
+
         search = Text(shell, SWT.NONE)
-        search.setTextLimit(50)
+        search.setTextLimit(100)
+        search.layoutData = GridData(SWT.FILL, SWT.FILL, false, true)
 
 
         tree.addSelectionListener(object : SelectionAdapter(){
@@ -71,7 +98,7 @@ class JsonTree() {
         search.addModifyListener(object: ModifyListener{
             override fun modifyText(p0: ModifyEvent) {
                 allItems.forEach {
-                    if(search.text == it.text){
+                    if(it.text.contains(search.text) && !search.text.isEmpty()){
                         it.background = Color(0,0,0)
                     }
                     else{
@@ -100,6 +127,7 @@ class JsonTree() {
 
                 currentTreeItem = root
                 root.setData("name", jo.serialize())
+                root.setData("element", jo)
                 root.text = "object"
                 root.setImage(Image(display, modifier.getImgLoc(jo)))
 
@@ -115,13 +143,15 @@ class JsonTree() {
                 root.text = "arr"
                 currentTreeItem = root
                 root.setData("name", ja.serialize())
+                root.setData("element", ja)
                 root.setImage(Image(display, modifier.getImgLoc(ja)))
 
                 ja.children.forEach {
                     if(!(it is JsonObject) && modifier.toShow(it)){
                         val node = TreeItem(currentTreeItem, SWT.NONE)
-                        node.text = parseType(it)
+                        node.setData("element", it)
                         node.setData("name", it.toString())
+                        node.text = parseType(node.getData("element"))
                     }
                 }
             }
@@ -129,9 +159,10 @@ class JsonTree() {
             override fun visit(jd: JsonData) {
                 val node = TreeItem(currentTreeItem, SWT.NONE)
                 //node.text = jd.name
-                node.text = modifier.setText(jd)
+                node.setData("element", jd)
                 node.setData("name", jd.serialize())
                 node.setImage(Image(display, modifier.getImgLoc(jd)))
+                node.text = modifier.setText(node.getData("element") as JsonData)
 
             }
 
@@ -147,7 +178,7 @@ class JsonTree() {
             button.text = action.name
             button.addSelectionListener(object : SelectionAdapter(){
                 override fun widgetSelected(e: SelectionEvent) {
-                    action.execute(text.text)
+                    action.execute(this@JsonTree)
                 }
             })
         }
