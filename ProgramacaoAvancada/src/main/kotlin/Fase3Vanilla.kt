@@ -5,7 +5,6 @@ import org.eclipse.swt.events.ModifyListener
 import org.eclipse.swt.events.SelectionAdapter
 import org.eclipse.swt.events.SelectionEvent
 import org.eclipse.swt.graphics.Color
-import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.widgets.*
@@ -23,16 +22,14 @@ fun main() {
     val anotherObj = JsonObject()
     anotherObj.addElement(example0)
     anotherObj.addElement(example1)
-
     arrJson.addElement(anotherObj)
 
-
-    val jt = Injector.create(JsonTree::class)
+    val jt = JsonTreeVanilla()
     jt.open(arrJson)
 }
 
 
-class JsonTree() {
+class JsonTreeVanilla() {
 
     val shell: Shell
     val tree: Tree
@@ -41,11 +38,6 @@ class JsonTree() {
     lateinit var e: JsonElement
     val display: Display = Display.getDefault()
 
-    @Inject
-    lateinit var modifier : Modifier
-
-    @InjectAdd
-    val actions = mutableListOf<Action>()
 
     val allItems: MutableList<TreeItem> = mutableListOf()
 
@@ -58,7 +50,7 @@ class JsonTree() {
         allItems.forEach {
             val type = it.getData("element")
             if(type is JsonData) {
-                it.text = modifier.setText(type)
+                it.text = type.toString()
             }
 
             it.setData("name", (type as JsonElement).serialize())
@@ -132,7 +124,7 @@ class JsonTree() {
                 root.setData("name", jo.serialize())
                 root.setData("element", jo)
                 root.text = "object"
-                root.setImage(Image(display, modifier.getImgLoc(jo)))
+
 
             }
 
@@ -147,10 +139,9 @@ class JsonTree() {
                 currentTreeItem = root
                 root.setData("name", ja.serialize())
                 root.setData("element", ja)
-                root.setImage(Image(display, modifier.getImgLoc(ja)))
 
                 ja.children.forEach {
-                    if(!(it is JsonObject) && modifier.toShow(it)){
+                    if(!(it is JsonObject)){
                         val node = TreeItem(currentTreeItem, SWT.NONE)
                         node.setData("element", it)
                         node.setData("name", it.toString())
@@ -161,11 +152,9 @@ class JsonTree() {
 
             override fun visit(jd: JsonData) {
                 val node = TreeItem(currentTreeItem, SWT.NONE)
-                //node.text = jd.name
+                node.text = jd.name
                 node.setData("element", jd)
                 node.setData("name", jd.serialize())
-                node.setImage(Image(display, modifier.getImgLoc(jd)))
-                node.text = modifier.setText(node.getData("element") as JsonData)
 
             }
 
@@ -176,15 +165,7 @@ class JsonTree() {
         })
 
 
-        actions.forEach { action ->
-            val button = Button(shell, SWT.PUSH)
-            button.text = action.name
-            button.addSelectionListener(object : SelectionAdapter(){
-                override fun widgetSelected(e: SelectionEvent) {
-                    action.execute(this@JsonTree)
-                }
-            })
-        }
+
 
 
 
@@ -196,7 +177,7 @@ class JsonTree() {
         tree.expandAll()
         shell.pack()
         shell.open()
-        
+
         while (!shell.isDisposed) {
             if (!display.readAndDispatch()) display.sleep()
         }
@@ -205,24 +186,6 @@ class JsonTree() {
 }
 
 
-// auxiliares para varrer a árvore
 
-fun Tree.expandAll() = traverse { it.expanded = true }
 
-fun Tree.traverse(visitor: (TreeItem) -> Unit) {
-    fun TreeItem.traverse() {
-        visitor(this)
-        items.forEach {
-            it.traverse()
-        }
-    }
-    items.forEach { it.traverse() }
-}
 
-fun getAllItems(currentItem: TreeItem, allItems: MutableList<TreeItem>){
-    currentItem.items.forEach {
-        allItems.add(it)
-        getAllItems(it, allItems)
-    }
-
-}

@@ -57,13 +57,13 @@ class JsonArray() : JsonElement(){
 
     constructor(col : Collection<*>) : this(){
         col.forEach {
-            if (it != null) {
+            if (isValidType(it)) {
                 children.add(it)
             }
         }
     }
 
-    val children = mutableListOf<Any>()
+    val children = mutableListOf<Any?>()
 
     fun addElement(a : Any){
         if(isValidType(a))
@@ -208,6 +208,7 @@ fun main(){
     jsonObject1.addElement(test6)
 
     println(jsonObject1.serialize())
+    println(jsonObject1.getKeys())
 
 
 }
